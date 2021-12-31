@@ -1,22 +1,36 @@
+from django.core import paginator
 from django.shortcuts import render, redirect
 from django.http import HttpResponse
 from django.contrib.auth.decorators import login_required
-
+from django.contrib import messages
 from .models import Projects, Tag
-from .forms import ProjectForm
+from .forms import ProjectForm, ReviewForm
 from .utils import searchProjects, paginateProjects
 
 def projects(request):
     
-    projects, search_query = searchProjects(request)
-    custom_range, projects = paginateProjects(request, projects, 6)
+  projects, search_query = searchProjects(request)
+  custom_range, projects = paginateProjects(request, projects, 6)
   
-    context = { 'projects': projects, 'search_query': search_query,  'custom_range': custom_range}
-    return render(request,'projects/projects.html', context)
+  context = { 'projects': projects, 'search_query': search_query,  'custom_range': custom_range}
+  return render(request,'projects/projects.html', context)
     
 def project(request,pk):
- projectObj = Projects.objects.get(id=pk)
- return render(request,'projects/single-project.html',{'project':projectObj})
+  projectObj = Projects.objects.get(id=pk)
+  form = ReviewForm()
+
+  if request.method == 'POST':
+    form = ReviewForm(request.POST)
+    review = form.save(commit=False)
+    review.project = projectObj
+    review.owner = request.user.profile
+    review.save()
+    
+    projectObj.getVoteCount
+    messages.success(request, 'Your review was successfully submitted! ')
+    return redirect('project', pk=projectObj.id)
+
+  return render(request,'projects/single-project.html',{'project':projectObj, 'form':form})
 
 
 @login_required(login_url="login")
