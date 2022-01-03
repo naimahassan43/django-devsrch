@@ -3,7 +3,7 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated, IsAdminUser
 from rest_framework.response import Response
 from .serializers import ProjectsSerializer
-from projects.models import Projects
+from projects.models import Projects, Review
 
 @api_view(['GET'])
 def getRoutes(request):
@@ -21,7 +21,6 @@ def getRoutes(request):
 @api_view(['GET'])
 
 def getProjects(request):
-   
    projects = Projects.objects.all()
    serializer = ProjectsSerializer(projects, many=True)
    return Response(serializer.data)
@@ -29,5 +28,24 @@ def getProjects(request):
 @api_view(['GET'])
 def getProject(request, pk):
    project = Projects.objects.get(id=pk)
+   serializer = ProjectsSerializer(project, many=False)
+   return Response(serializer.data)
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def projectVote(request, pk):
+   project = Projects.objects.get(id=pk)
+   user = request.user.profile
+   data = request.data
+
+   review, created = Review.objects.get_or_create(
+      owner = user, project = project,
+   )
+
+   review.value = data['value']
+   review.save()
+
+   project.getVoteCount
+   
    serializer = ProjectsSerializer(project, many=False)
    return Response(serializer.data)
